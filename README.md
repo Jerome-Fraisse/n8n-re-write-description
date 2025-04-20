@@ -1,8 +1,7 @@
 # 🧪 n8n Workflow - Champagne Product Description Rewrite
 
 ## 📌 Objectif
-
-Ce workflow `n8n` permet de :
+Ce workflow n8n permet de :
 
 - Récupérer des fiches produits depuis une source HTTP
 - Générer automatiquement des descriptions percutantes via GPT (OpenAI)
@@ -37,6 +36,17 @@ Récupère un tableau JSON contenant les fiches produits :
     }
   }
 ]
+```
+
+</details>
+
+---
+
+### 🔹 Brique 2 — Génération des prompts GPT
+
+**Type :** Code Node (Loop)
+
+```js
 return items.map(({ json }) => {
   const description = json.original_description || json.description || '';
 
@@ -57,9 +67,23 @@ return items.map(({ json }) => {
     }
   };
 });
-🔹 Brique 3 — Appel à OpenAI
-Type : OpenAI Node (GPT-4)
-Utilise le champ prompt pour générer une nouvelle description_rewrite.
+```
+
+---
+
+### 🔹 Brique 3 — Appel à OpenAI
+
+**Type :** OpenAI Node (GPT-4)
+
+Utilise le champ `prompt` pour générer une nouvelle `description_rewrite`.
+
+---
+
+### 🔹 Brique 4 — Fusion des réponses
+
+**Type :** Code Node
+
+```js
 const produits = $items("brique 2");
 const reponses = items;
 
@@ -74,6 +98,15 @@ return produits.map((prod, index) => {
     }
   };
 });
+```
+
+---
+
+### 🔹 Brique 5 — Génération du fichier JSON final
+
+**Type :** Code Node
+
+```js
 const produits = items
   .map(i => i.json)
   .filter(p => typeof p.description_rewrite === 'string' && p.description_rewrite.trim() !== '');
@@ -94,20 +127,29 @@ return [{
     }
   }
 }];
-Conseils & Astuces
-Limitez à 3 produits max pendant les tests pour éviter les quotas GPT
+```
 
-Vérifiez l'encodage UTF-8 du fichier final
+---
 
-Filtrez avec description_rewrite.trim() !== ''
+## 🛠️ Conseils & Astuces
 
-Ajoutez un nœud Debug après chaque étape pour observer l'état
+- Limitez à 3 produits max pendant les tests pour éviter les quotas GPT
+- Vérifiez l'encodage UTF-8 du fichier final
+- Filtrez avec `description_rewrite.trim() !== ''`
+- Ajoutez un nœud `Debug` après chaque étape pour observer l'état
 
-📂 Export / Import
-Vous pouvez exporter ce workflow depuis n8n via Download as .json
-Ou l’importer dans un autre environnement via Import from File
+---
 
-✨ Résultat Attendu
+## 📂 Export / Import
+
+Vous pouvez exporter ce workflow depuis `n8n` via **Download as .json**  
+Ou l’importer dans un autre environnement via **Import from File**
+
+---
+
+## ✨ Résultat Attendu
+
+```json
 {
   "produits": [
     {
@@ -119,3 +161,11 @@ Ou l’importer dans un autre environnement via Import from File
     }
   ]
 }
+```
+
+---
+
+## 💬 Crédit
+
+Made with ❤️ using `n8n`, `OpenAI` et beaucoup de bulles.  
+Besoin d’aide pour ajouter un export CSV ou une connexion Google Sheets ? Ping-moi.
