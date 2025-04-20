@@ -21,7 +21,9 @@ Type : HTTP Request
 Récupère un tableau JSON contenant les fiches produits :
 
 <details open>
+<summary>🪟 Aperçu JSON formaté</summary>
 
+<br>
 
 ```json
 [
