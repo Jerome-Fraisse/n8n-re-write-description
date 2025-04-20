@@ -21,9 +21,7 @@ Type : HTTP Request
 Récupère un tableau JSON contenant les fiches produits :
 
 <details open>
-<summary>🪟 Aperçu JSON formaté</summary>
 
-<br>
 
 ```json
 [
@@ -39,7 +37,7 @@ Récupère un tableau JSON contenant les fiches produits :
     }
   }
 ]
-
+</details> ```
 
 🔹 Brique 2 — Génération des prompts GPT
 
