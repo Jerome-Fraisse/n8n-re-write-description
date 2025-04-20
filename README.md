@@ -1,23 +1,21 @@
-n8n Workflow - Champagne Product Description Rewrite
+# 🧪 n8n Workflow - Champagne Product Description Rewrite
 
-📌 Objectif
+## 📌 Objectif
 
-Ce workflow n8n permet de :
+Ce workflow `n8n` permet de :
 
-Récupérer des fiches produits depuis une source HTTP.
+- Récupérer des fiches produits depuis une source HTTP
+- Générer automatiquement des descriptions percutantes via GPT (OpenAI)
+- Fusionner les descriptions enrichies avec les données originales
+- Générer un fichier JSON final prêt à exporter
 
-Générer automatiquement des descriptions percutantes via GPT (OpenAI).
+---
 
-Fusionner les descriptions enrichies avec les données originales.
+## 🧱 Structure du Workflow (Briques)
 
-Générer un fichier JSON en sortie prêt à être utilisé/exporté.
+### 🔹 Brique 1 — Récupération des données HTTP
 
-🧱 Structure du Workflow (Briques)
-
-🔹 Brique 1 — Récupération des données HTTP
-
-Type : HTTP Request
-
+**Type :** HTTP Request  
 Récupère un tableau JSON contenant les fiches produits :
 
 <details open>
@@ -39,14 +37,6 @@ Récupère un tableau JSON contenant les fiches produits :
     }
   }
 ]
-</details> ```
-
-🔹 Brique 2 — Génération des prompts GPT
-
-Type : Code Node (Loop)
-
-Transforme chaque produit en un prompt pour GPT.
-
 return items.map(({ json }) => {
   const description = json.original_description || json.description || '';
 
@@ -67,19 +57,9 @@ return items.map(({ json }) => {
     }
   };
 });
-
 🔹 Brique 3 — Appel à OpenAI
-
 Type : OpenAI Node (GPT-4)
-
-Utilise le champ prompt pour générer une nouvelle description_rewrite via le modèle OpenAI.
-
-🔹 Brique 4 — Fusion des réponses
-
-Type : Code Node
-
-Fusionne la réponse de GPT dans la fiche produit d’origine.
-
+Utilise le champ prompt pour générer une nouvelle description_rewrite.
 const produits = $items("brique 2");
 const reponses = items;
 
@@ -94,19 +74,12 @@ return produits.map((prod, index) => {
     }
   };
 });
-
-🔹 Brique 5 — Génération du fichier JSON final
-
-Type : Code Node
-
-Filtre les produits sans description enrichie et génère le fichier final en binaire.
-
 const produits = items
   .map(i => i.json)
   .filter(p => typeof p.description_rewrite === 'string' && p.description_rewrite.trim() !== '');
 
 if (produits.length === 0) {
-  throw new Error("Aucun produit avec 'description_rewrite' valide trouvé. Vérifiez les étapes précédentes.");
+  throw new Error("Aucun produit avec 'description_rewrite' valide trouvé.");
 }
 
 const buffer = Buffer.from(JSON.stringify({ produits }, null, 2), 'utf8');
@@ -121,25 +94,20 @@ return [{
     }
   }
 }];
+Conseils & Astuces
+Limitez à 3 produits max pendant les tests pour éviter les quotas GPT
 
-🛠️ Conseils & Astuces
+Vérifiez l'encodage UTF-8 du fichier final
 
-Limiter l'appel à GPT à 3 produits pendant les tests pour éviter les quotas.
+Filtrez avec description_rewrite.trim() !== ''
 
-Vérifiez l'encodage UTF-8 du fichier final pour les caractères accentués.
-
-Utilisez description_rewrite.trim() !== '' pour filtrer proprement les réponses GPT vides.
-
-Ajoutez un nœud de log/Debug après chaque étape si nécessaire pour voir l'état intermédiaire des données.
+Ajoutez un nœud Debug après chaque étape pour observer l'état
 
 📂 Export / Import
-
-Vous pouvez exporter ce workflow depuis n8n en cliquant sur Download as .json puis le partager sur GitHub ou l’importer dans un autre n8n via Import from File.
+Vous pouvez exporter ce workflow depuis n8n via Download as .json
+Ou l’importer dans un autre environnement via Import from File
 
 ✨ Résultat Attendu
-
-Un fichier champagnes.json contenant :
-
 {
   "produits": [
     {
@@ -148,13 +116,6 @@ Un fichier champagnes.json contenant :
       "original_description": "...",
       "image": "...",
       "description_rewrite": "..."
-    },
-    ...
+    }
   ]
 }
-
-💬 Crédit
-
-Build with ❤️ using n8n + OpenAI + 💡 persistence.
-
-Besoin d’aide pour ajouter un export CSV ou connecter à Google Sheets ? Ping moi
