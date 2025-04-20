@@ -20,16 +20,7 @@ Type : HTTP Request
 
 Récupère un tableau JSON contenant les fiches produits :
 
-[
-  {
-    "name": "Champagne Drappier - Brut Nature & étui",
-    "description": "...",
-    "url": "...",
-    "image": "...",
-    "tags": [...],
-    "pairings": { ... }
-  }
-]
+<pre> ```json [ { "name": "Champagne Drappier - Brut Nature & étui", "description": "...", "url": "...", "image": "...", "tags": ["brut", "nature", "champagne"], "pairings": { "cheese": ["comté", "chèvre"], "seafood": ["huîtres", "sashimi"] } } ] ``` </pre>
 
 🔹 Brique 2 — Génération des prompts GPT
 
