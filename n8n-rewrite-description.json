@@ -1,0 +1,294 @@
+{
+  "name": "generation v2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0180d028-2103-4732-a924-ebb9e3035c29",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://clos-bengueres.fr/datas/champagnes2.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        20
+      ],
+      "id": "dcea63df-b752-4fe0-8d9e-74aa5a849825",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ 1 }}",
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        40,
+        260
+      ],
+      "id": "2e0209c9-baad-415d-a847-7afea10f09c3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{$json.prompt}}"
+            },
+            {}
+          ]
+        },
+        "simplify": "={{ true }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        680,
+        280
+      ],
+      "id": "08f32c6f-f733-455b-a7ee-3e837f8f812b",
+      "name": "OpenAI",
+      "alwaysOutputData": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "1QR2gN7e6rT911GC",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(({ json }) => {\n  // Récupérer le nom original du produit s'il existe dans votre JSON d'entrée\n  // Ou essayer de le retrouver dans le contenu généré\n  let rawName;\n  \n  // Option 1: Le nom est déjà disponible dans votre JSON (la situation idéale)\n  if (json.name) {\n    rawName = json.name;\n  }\n  // Option 2: Le nom n'est pas disponible directement, essayer de l'extraire du contenu\n  else {\n    const content = json.message?.content || json.description_rewrite || '';\n    \n    // Chercher \"Découvrez le Champagne X\"\n    const champagneMatch = content.match(/Découvrez le (Champagne [^,\\.]+)/i);\n    if (champagneMatch && champagneMatch[1]) {\n      rawName = champagneMatch[1].trim();\n    } else {\n      rawName = 'produit-inconnu';\n    }\n  }\n  \n  const description = json.message?.content || json.description_rewrite || '<p>Contenu vide</p>';\n  \n  // Nettoyage du nom pour le slug\n  const slug = rawName\n    .split('\\n')[0]                 // coupe après retour ligne\n    .trim()\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/gi, '-')   // caractères safe\n    .replace(/^-+|-+$/g, '');       // nettoie bordures tirets\n  \n  const fileName = `${slug || 'produit-inconnu'}.html`;\n  const buffer = Buffer.from(description, 'utf8');\n  \n  // Ajouter des logs pour déboguer\n  console.log(\"Traitement du produit:\", rawName);\n  console.log(\"Nom de fichier généré:\", fileName);\n  \n  return {\n    json: {\n      ...json,\n      fileName,\n      description_rewrite: description\n    },\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        mimeType: 'text/html',\n        fileName\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        60
+      ],
+      "id": "a454ceea-fcd7-4b7e-a8b2-4010cf06b168",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// On limite à 3 produits max\nreturn items.slice(0, 3);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        20
+      ],
+      "id": "10ce2d99-7d0b-4c44-8b8b-22be640107d6",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ton HTTP retourne déjà un tableau de produits\nreturn items.map(item => ({\n  json: item.json\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        20
+      ],
+      "id": "d4c433cf-3f13-4fb6-8179-18ca6ce0236e",
+      "name": "Brique 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(({ json }) => {\n  const description = json.original_description || json.description || '';\n\n  const prompt = description.trim()\n    ? `Voici une fiche produit brute :\\n\"${description}\"\\n\\nRéécris une description unique et percutante pour le produit ${json.name}. Utilise un ton captivant, une touche de storytelling, et le champ lexical du champagne pour séduire un amateur de vin exigeant.`\n    : null;\n\n  return {\n    json: {\n      ...json,\n      prompt,\n      product: {\n        name: json.name || 'Inconnu',\n        url: json.url || '',\n        original_description: description,\n        image: json.image || null,\n      }\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        280
+      ],
+      "id": "28e85f39-8a20-4be8-9170-1884fdb6fc02",
+      "name": "brique 2"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "C:\\Users\\user\\Documents\\updated_products.json",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ],
+      "id": "a22b5751-1a77-4b7a-93f2-813df2d1e3ed",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "const produits = $items(\"brique 2\"); // On récupère les prompts avec les produits complets\nconst reponses = items; // Réponses brutes d'OpenAI (chaîne .message.content)\n\nreturn produits.map((prod, index) => {\n  const original = prod.json;\n  const reponse = reponses[index]?.json?.message?.content || '';\n\n  return {\n    json: {\n      ...original, // On conserve TOUT (name, url, image, price, pairings, tags, etc.)\n      description_rewrite: reponse\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        280
+      ],
+      "id": "043c0bdd-a2b3-48d9-9979-535e0ef02b21",
+      "name": "brique3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const produits = items.map(item => item.json);\nconst buffer = Buffer.from(JSON.stringify(produits, null, 2), 'utf8');\n\nreturn [\n  {\n    binary: {\n      data: {\n        data: buffer.toString('base64'),\n        mimeType: 'application/json',\n        fileName: 'produits_champagnes_complets.json'\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        240
+      ],
+      "id": "cdb4f318-ab4b-4f1a-8de4-54a850ec96cd",
+      "name": "brique 4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "brique 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "brique3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Brique 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brique 1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "brique 2": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "brique3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "brique 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "brique 4": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1ddcdc02-63af-44cc-999b-9b82e57e2946",
+  "meta": {
+    "instanceId": "509a675ca4056d0e1b4f9abd109cc6662a926e636b94a3964c00b0462fc4f746"
+  },
+  "id": "XLS6pAvwIF6DElT4",
+  "tags": []
+}
